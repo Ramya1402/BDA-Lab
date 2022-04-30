@@ -1,0 +1,178 @@
+cqlsh> create keyspace Students with replication = {'class':'SimpleStrategy', 'replication_factor':1};
+cqlsh> describe keyspaces;
+cqlsh> use Students;
+cqlsh:students> create table Student_Info (RollNo int PRIMARY KEY, StudName text, DateofJoining timestamp, LastExamPercent double);
+cqlsh:students> describe tables;
+
+student_info
+
+cqlsh:students> describe table student_info;
+
+CREATE TABLE students.student_info (
+    rollno int PRIMARY KEY,
+    dateofjoining timestamp,
+    lastexampercent double,
+    studname text
+) WITH bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND crc_check_chance = 1.0
+    AND dclocal_read_repair_chance = 0.1
+    AND default_time_to_live = 0
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair_chance = 0.0
+    AND speculative_retry = '99PERCENTILE';
+cqlsh:students> BEGIN BATCH
+            ... insert into student_info (RollNo, StudName, DateofJoining, LastExamPercent) values (1,'Michael Storm','2012-03-29',69.6)
+            ... insert into student_info (RollNo, StudName, DateofJoining, LastExamPercent) values (2,'Stephen Fox','2013-02-27',72.5)
+            ... insert into student_info (RollNo, StudName, DateofJoining, LastExamPercent) values (3,'David Fleming','2014-04-12',81.7)
+            ... insert into student_info (RollNo, StudName, DateofJoining, LastExamPercent) values (4,'Ian String','2012-05-11',73.4)
+            ... APPLY BATCH;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | lastexampercent | studname
+--------+---------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 |            72.5 |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |            73.4 |    Ian String
+      3 | 2014-04-11 18:30:00.000000+0000 |            81.7 | David Fleming
+
+(4 rows)
+cqlsh:students> alter table Students alter DateofJoining date;
+SyntaxException: line 1:41 mismatched input 'date' expecting K_TYPE (alter table Students alter DateofJoining [date]...)
+cqlsh:students> select * from student_info where RollNo IN (1,2,3);
+
+ rollno | dateofjoining                   | lastexampercent | studname
+--------+---------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 |            72.5 |   Stephen Fox
+      3 | 2014-04-11 18:30:00.000000+0000 |            81.7 | David Fleming
+
+(3 rows)
+cqlsh:students> create index on sudent_info(StudName);
+InvalidRequest: Error from server: code=2200 [Invalid query] message="unconfigured table sudent_info"
+cqlsh:students> create index on student_info(StudName);
+cqlsh:students> select * from student_info where StudName='Stephen Fox';
+
+ rollno | dateofjoining                   | lastexampercent | studname
+--------+---------------------------------+-----------------+-------------
+      2 | 2013-02-26 18:30:00.000000+0000 |            72.5 | Stephen Fox
+
+(1 rows)
+cqlsh:students> create index on student_info(DateofJoining);
+cqlsh:students> select * from student_info where DateofJoining='2012-03-29';
+
+ rollno | dateofjoining                   | lastexampercent | studname
+--------+---------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |            69.6 | Michael Storm
+
+(1 rows)
+cqlsh:students> alter table Students alter DateofJoining type timeuuid;
+InvalidRequest: Error from server: code=2200 [Invalid query] message="unconfigured table students"
+cqlsh:students> alter table student_info alter DateofJoining type timeuuid;
+InvalidRequest: Error from server: code=2200 [Invalid query] message="Altering of types is not allowed"
+cqlsh:students> alter table student_info add hobbies set<text>;
+cqlsh:students> update student_info set hobbies = hobbies + {'Chess','Table','Tennies'} where RollNo=1;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | hobbies                       | lastexampercent | studname
+--------+---------------------------------+-------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 | {'Chess', 'Table', 'Tennies'} |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 |                          null |            72.5 |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |                          null |            73.4 |    Ian String
+      3 | 2014-04-11 18:30:00.000000+0000 |                          null |            81.7 | David Fleming
+
+(4 rows)
+cqlsh:students> update student_info set hobbies = hobbies + {'drawing','singing','painting'} where RollNo=2;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | hobbies                            | lastexampercent | studname
+--------+---------------------------------+------------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |      {'Chess', 'Table', 'Tennies'} |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 | {'drawing', 'painting', 'singing'} |            72.5 |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |                               null |            73.4 |    Ian String
+      3 | 2014-04-11 18:30:00.000000+0000 |                               null |            81.7 | David Fleming
+
+(4 rows)
+cqlsh:students> alter table student_info add language list<text>;
+cqlsh:students> update student_info set language = language + ['Hindi','English'] where RollNo=3;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | hobbies                            | language             | lastexampercent | studname
+--------+---------------------------------+------------------------------------+----------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |      {'Chess', 'Table', 'Tennies'} |                 null |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 | {'drawing', 'painting', 'singing'} |                 null |            72.5 |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |                               null |                 null |            73.4 |    Ian String
+      3 | 2014-04-11 18:30:00.000000+0000 |                               null | ['Hindi', 'English'] |            81.7 | David Fleming
+
+(4 rows)
+cqlsh:students> select RollNo, hobbies, language, lastexampercent from student_info LIMIt 2;
+
+ rollno | hobbies                            | language | lastexampercent
+--------+------------------------------------+----------+-----------------
+      1 |      {'Chess', 'Table', 'Tennies'} |     null |            69.6
+      2 | {'drawing', 'painting', 'singing'} |     null |            72.5
+
+(2 rows)
+cqlsh:students> update student_info set language = language + ['Tamil','Telugu','English'] where RollNo=2;
+cqlsh:students> select RollNo, hobbies, language, lastexampercent from student_info LIMIt 2;
+
+ rollno | hobbies                            | language                       | lastexampercent
+--------+------------------------------------+--------------------------------+-----------------
+      1 |      {'Chess', 'Table', 'Tennies'} |                           null |            69.6
+      2 | {'drawing', 'painting', 'singing'} | ['Tamil', 'Telugu', 'English'] |            72.5
+
+(2 rows)
+cqlsh:students> update student_info SET StudName='David Sheen' where RollNo=3;
+cqlsh:students> select * from student_info where rollno=3;
+
+ rollno | dateofjoining                   | hobbies | language             | lastexampercent | studname
+--------+---------------------------------+---------+----------------------+-----------------+-------------
+      3 | 2014-04-11 18:30:00.000000+0000 |    null | ['Hindi', 'English'] |            81.7 | David Sheen
+
+(1 rows)
+cqlsh:students> update student_info set rollno=6 where rollno=4;
+InvalidRequest: Error from server: code=2200 [Invalid query] message="PRIMARY KEY part rollno found in SET part"
+cqlsh:students> delete LastExamPercent from student_info where RollNo=2;
+cqlsh:students> select * from student_info where rollno=2;
+
+ rollno | dateofjoining                   | hobbies                            | language                       | lastexampercent | studname
+--------+---------------------------------+------------------------------------+--------------------------------+-----------------+-------------
+      2 | 2013-02-26 18:30:00.000000+0000 | {'drawing', 'painting', 'singing'} | ['Tamil', 'Telugu', 'English'] |            null | Stephen Fox
+
+(1 rows)
+cqlsh:students> delete from student_info where rollno=3;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | hobbies                            | language                       | lastexampercent | studname
+--------+---------------------------------+------------------------------------+--------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |      {'Chess', 'Table', 'Tennies'} |                           null |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 | {'drawing', 'painting', 'singing'} | ['Tamil', 'Telugu', 'English'] |            null |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |                               null |                           null |            73.4 |    Ian String
+
+(3 rows)
+cqlsh:students> delete hobbies from student_info where rollno=1;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | hobbies                            | language                       | lastexampercent | studname
+--------+---------------------------------+------------------------------------+--------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |                               null |                           null |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 | {'drawing', 'painting', 'singing'} | ['Tamil', 'Telugu', 'English'] |            null |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |                               null |                           null |            73.4 |    Ian String
+
+(3 rows)
+cqlsh:students> update student_info set hobbies = hobbies + {'Chess','Badminton','Tennies'} where RollNo=1;
+cqlsh:students> select * from student_info;
+
+ rollno | dateofjoining                   | hobbies                            | language                       | lastexampercent | studname
+--------+---------------------------------+------------------------------------+--------------------------------+-----------------+---------------
+      1 | 2012-03-28 18:30:00.000000+0000 |  {'Badminton', 'Chess', 'Tennies'} |                           null |            69.6 | Michael Storm
+      2 | 2013-02-26 18:30:00.000000+0000 | {'drawing', 'painting', 'singing'} | ['Tamil', 'Telugu', 'English'] |            null |   Stephen Fox
+      4 | 2012-05-10 18:30:00.000000+0000 |                               null |                           null |            73.4 |    Ian String
+
+
