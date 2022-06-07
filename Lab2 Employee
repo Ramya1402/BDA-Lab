@@ -1,0 +1,107 @@
+cqlsh> create keyspace Employee_227 with replication = {'class':'SimpleStrategy','replication_factor':1};
+cqlsh> use Employee_227;
+cqlsh:employee_227> create table Employee_info(Emp_Id int, Emp_Name text, Designation text, Date_of_Joining date, Salary double, Dept_Name text, PRIMARY KEY((Emp_Id), Salary)) WITH CLUSTERING ORDER BY (Salary ASC);
+cqlsh:employee_227> describe table Employee_Info;
+
+CREATE TABLE employee_227.employee_info (
+    emp_id int,
+    salary double,
+    date_of_joining date,
+    dept_name text,
+    designation text,
+    emp_name text,
+    PRIMARY KEY (emp_id, salary)
+) WITH CLUSTERING ORDER BY (salary ASC)
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND crc_check_chance = 1.0
+    AND dclocal_read_repair_chance = 0.1
+    AND default_time_to_live = 0
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair_chance = 0.0
+    AND speculative_retry = '99PERCENTILE';
+
+cqlsh:employee_227> begin batch
+                ... insert into Employee_info(Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name) values(123,'Hari','HR','2001-02-21',2500000,'HR');
+                ... insert into Employee_info(Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name) values(121,'Rohan','Manager','1999-11-15',3400000,'COE');
+                ... insert into Employee_info(Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name) values(125,'Ramesh','CEO','2005-09-06',200000000,'Admin');
+                ... insert into Employee_info(Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name) values(122,'Yadav','SDE','2014-05-28',1600000,'IT');
+                ... apply batch;
+cqlsh:employee_227> select * from Employee_info;
+
+ emp_id | salary  | date_of_joining | dept_name | designation | emp_name
+--------+---------+-----------------+-----------+-------------+----------
+    123 | 2.5e+06 |      2001-02-21 |        HR |          HR |     Hari
+    125 |   2e+08 |      2005-09-06 |     Admin |         CEO |   Ramesh
+    122 | 1.6e+06 |      2014-05-28 |        IT |         SDE |    Yadav
+    121 | 3.4e+06 |      1999-11-15 |       COE |     Manager |    Rohan
+
+(4 rows)
+cqlsh:employee_227> update Employee_info set Emp_Name='Mohan', Dept_Name='Marketing' where Emp_Id=121 and Salary=3400000;
+cqlsh:employee_227> select * from Employee_info;
+
+ emp_id | salary  | date_of_joining | dept_name | designation | emp_name
+--------+---------+-----------------+-----------+-------------+----------
+    123 | 2.5e+06 |      2001-02-21 |        HR |          HR |     Hari
+    125 |   2e+08 |      2005-09-06 |     Admin |         CEO |   Ramesh
+    122 | 1.6e+06 |      2014-05-28 |        IT |         SDE |    Yadav
+    121 | 3.4e+06 |      1999-11-15 | Marketing |     Manager |    Mohan
+
+(4 rows)
+cqlsh:employee_227> alter table Employee_Info add Projects set<text>;
+cqlsh:employee_227> update Employee_info set Projects={'SEO','Return on Investment Strategies'} where Emp_Id = 121 and Salary=3400000;
+cqlsh:employee_227> update Employee_info set Projects={'Machine Learning', 'Web Development', 'Mobile App Development'} where Emp_Id = 122 and Salary=1600000;
+cqlsh:employee_227> update Employee_info set Projects={'Risk assessment','Analytics','Cloud Computing'} where Emp_Id = 125 and Salary=200000000;
+cqlsh:employee_227> update Employee_info set Projects={'Performance Appraisal System','Diversity Management','Grievance Handling'} where Emp_Id = 123 and Salary=2500000;
+cqlsh:employee_227> select * from Employee_info;
+
+ emp_id | salary  | date_of_joining | dept_name | designation | emp_name | projects
+--------+---------+-----------------+-----------+-------------+----------+--------------------------------------------------------------------------------
+    123 | 2.5e+06 |      2001-02-21 |        HR |          HR |     Hari | {'Diversity Management', 'Grievance Handling', 'Performance Appraisal System'}
+    125 |   2e+08 |      2005-09-06 |     Admin |         CEO |   Ramesh |                            {'Analytics', 'Cloud Computing', 'Risk assessment'}
+    122 | 1.6e+06 |      2014-05-28 |        IT |         SDE |    Yadav |              {'Machine Learning', 'Mobile App Development', 'Web Development'}
+    121 | 3.4e+06 |      1999-11-15 | Marketing |     Manager |    Mohan |                                     {'Return on Investment Strategies', 'SEO'}
+
+(4 rows)
+cqlsh:employee_227> insert into Employee_info(Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name,Projects) values(124,'Karthik','Intern','2021-07-19',50000,'IT',{'CyberSecurity','Data Science','Ethical Hacking'})using ttl 15;
+cqlsh:employee_227> select * from employee_info;
+
+ emp_id | salary  | date_of_joining | dept_name | designation | emp_name | projects
+--------+---------+-----------------+-----------+-------------+----------+--------------------------------------------------------------------------------
+    123 | 2.5e+06 |      2001-02-21 |        HR |          HR |     Hari | {'Diversity Management', 'Grievance Handling', 'Performance Appraisal System'}
+    125 |   2e+08 |      2005-09-06 |     Admin |         CEO |   Ramesh |                            {'Analytics', 'Cloud Computing', 'Risk assessment'}
+    122 | 1.6e+06 |      2014-05-28 |        IT |         SDE |    Yadav |              {'Machine Learning', 'Mobile App Development', 'Web Development'}
+    121 | 3.4e+06 |      1999-11-15 | Marketing |     Manager |    Mohan |                                     {'Return on Investment Strategies', 'SEO'}
+    124 |   50000 |      2021-07-19 |        IT |      Intern |  Karthik |                           {'CyberSecurity', 'Data Science', 'Ethical Hacking'}
+
+(5 rows)
+cqlsh:employee_227> select ttl(Emp_Name) from Employee_Info where Emp_Id=124;
+
+ ttl(emp_name)
+---------------
+             9
+
+(1 rows)
+cqlsh:employee_227> select ttl(Emp_Name) from Employee_Info where Emp_Id=124;
+
+ ttl(emp_name)
+---------------
+             4
+
+(1 rows)
+cqlsh:employee_227> select * from employee_info;
+
+ emp_id | salary  | date_of_joining | dept_name | designation | emp_name | projects
+--------+---------+-----------------+-----------+-------------+----------+--------------------------------------------------------------------------------
+    123 | 2.5e+06 |      2001-02-21 |        HR |          HR |     Hari | {'Diversity Management', 'Grievance Handling', 'Performance Appraisal System'}
+    125 |   2e+08 |      2005-09-06 |     Admin |         CEO |   Ramesh |                            {'Analytics', 'Cloud Computing', 'Risk assessment'}
+    122 | 1.6e+06 |      2014-05-28 |        IT |         SDE |    Yadav |              {'Machine Learning', 'Mobile App Development', 'Web Development'}
+    121 | 3.4e+06 |      1999-11-15 | Marketing |     Manager |    Mohan |                                     {'Return on Investment Strategies', 'SEO'}
+
+(4 rows)
