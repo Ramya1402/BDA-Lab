@@ -1,0 +1,71 @@
+C:\Users\Ramya>cqlsh
+Connected to Test Cluster at 127.0.0.1:9042.
+[cqlsh 5.0.1 | Cassandra 3.11.8 | CQL spec 3.4.4 | Native protocol v4]
+Use HELP for help.
+cqlsh> create keyspace library with replication={'class':'SimpleStrategy','replication_factor':1}
+   ... ;
+cqlsh> describe keyspaces;
+
+system_schema  system_auth  system  library  system_distributed  system_traces
+
+cqlsh> use library;
+cqlsh:library> create table libinfo(stud_id int, counter_val counter, studname text, bookname text, book_id int, issue_date date, PRIMARY KEY(stud_id, studname, bookname, book_id, issue_date));
+cqlsh:library> update libinfo set counter_val = counter_val + 1 where stud_id=110 and studname='Ramya' and bookname='DBMS' and book_id=121 and issue_date='2022-05-06';
+cqlsh:library> update libinfo set counter_val = counter_val + 1 where stud_id=112 and studname='Shobha' and bookname='BDA' and book_id=133 and issue_date='2022-04-13';
+cqlsh:library> update libinfo set counter_val = counter_val + 1 where stud_id=134 and studname='Ramesh' and bookname='Discrete Math' and book_id=257 and issue_date='2021-12-07';
+cqlsh:library> update libinfo set counter_val = counter_val + 1 where stud_id=226 and studname='Anamika' and bookname='ML' and book_id=349 and issue_date='2021-11-27';
+cqlsh:library> select * from libinfo;
+
+ stud_id | studname | bookname      | book_id | issue_date | counter_val
+---------+----------+---------------+---------+------------+-------------
+     110 |    Ramya |          DBMS |     121 | 2022-05-06 |           1
+     134 |   Ramesh | Discrete Math |     257 | 2021-12-07 |           1
+     112 |   Shobha |           BDA |     133 | 2022-04-13 |           1
+     226 |  Anamika |            ML |     349 | 2021-11-27 |           1
+
+(4 rows)
+cqlsh:library> update libinfo set counter_val = counter_val + 1 where stud_id=112 and studname='Shobha' and bookname='BDA' and book_id=133 and issue_date='2022-04-13';
+cqlsh:library> select * from libinfo;
+
+ stud_id | studname | bookname      | book_id | issue_date | counter_val
+---------+----------+---------------+---------+------------+-------------
+     110 |    Ramya |          DBMS |     121 | 2022-05-06 |           1
+     134 |   Ramesh | Discrete Math |     257 | 2021-12-07 |           1
+     112 |   Shobha |           BDA |     133 | 2022-04-13 |           2
+     226 |  Anamika |            ML |     349 | 2021-11-27 |           1
+
+(4 rows)
+cqlsh:library> select * from libinfo where counter_val=2 allow filtering;
+
+ stud_id | studname | bookname | book_id | issue_date | counter_val
+---------+----------+----------+---------+------------+-------------
+     112 |   Shobha |      BDA |     133 | 2022-04-13 |           2
+
+(1 rows)
+cqlsh:library> copy libinfo(stud_id,counter_val,studname, bookname, book_id, issue_date) to 'C:\Users\Ramya\libdata';
+Using 7 child processes
+
+Starting copy of library.libinfo with columns [stud_id, counter_val, studname, bookname, book_id, issue_date].
+Processed: 4 rows; Rate:       2 rows/s; Avg. rate:       1 rows/s
+4 rows exported to 1 files in 3.118 seconds.
+cqlsh:library> create table libinfo_1(stud_id int, counter_val counter, studname text, bookname text, book_id int, issue_date date, PRIMARY KEY(stud_id, studname, bookname, book_id, issue_date));
+cqlsh:library> copy libinfo_1(stud_id,counter_val,studname, bookname, book_id, issue_date) from 'C:\Users\Ramya\libdata';
+Using 7 child processes
+
+Starting copy of library.libinfo_1 with columns [stud_id, counter_val, studname, bookname, book_id, issue_date].
+Processed: 4 rows; Rate:       1 rows/s; Avg. rate:       1 rows/s
+4 rows imported from 1 files in 4.201 seconds (0 skipped).
+cqlsh:library> select * from libinfo_1;
+
+ stud_id | studname | bookname      | book_id | issue_date | counter_val
+---------+----------+---------------+---------+------------+-------------
+     110 |    Ramya |          DBMS |     121 | 2022-05-06 |           1
+     134 |   Ramesh | Discrete Math |     257 | 2021-12-07 |           1
+     112 |   Shobha |           BDA |     133 | 2022-04-13 |           2
+     226 |  Anamika |            ML |     349 | 2021-11-27 |           1
+
+(4 rows)
+cqlsh:library> drop table libinfo;
+cqlsh:library> select * from libinfo;
+InvalidRequest: Error from server: code=2200 [Invalid query] message="unconfigured table libinfo"
+cqlsh:library>
